@@ -6,7 +6,7 @@ import PIL
 import random
 
 # TODO 1: Choose a digit
-digit = None
+digit = 2
 
 # TODO 2: Change number of training iterations for classifier
 n0 = 5
