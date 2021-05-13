@@ -13,11 +13,11 @@ n0 = 5
 
 def to_list(img):
     return list(map(int, img.view((28*28,)).tolist()))
-    
-SCALE_OFF = 0    
+
+SCALE_OFF = 0
 SCALE_RANGE = 1
 SCALE_01 = 2
-    
+
 
 def show_image(tens, imgname=None, scale=SCALE_01):
     """
@@ -52,10 +52,27 @@ loss_fn = torch.nn.BCELoss()
 class Discriminator(nn.Module):
     def __init__(self):
         super().__init__()
-        self.linear1 = nn.Linear(784,1)
+
+        #Start with LeakyReLU for hidden layers
+        model = nn.Sequential(nn.Linear(784, 256),
+                              nn.LeakyReLU(),
+                              nn.Linear(256, 1))
+        print(self.model)
+        #self.linear1 = nn.Linear(784,1)
+
+        #Sigmoid for output layer
+        self.sigmoid = nn.Sigmoid()
+        self.softmax = nn.Softmax(dim=1)
+
+        opt = torch.optim.Adam(model.parameters(), lr=0.01)
+
     def forward(self, x):
-        return self.linear1(x)
-       
+        x = self.model(x)
+        x = self.sigmoid(x)
+        x = self.softmax(x)
+
+        return x
+
 # TODO 4
 # Implement training loop for the classifier:
 # for i in range(n0):
@@ -65,9 +82,18 @@ class Discriminator(nn.Module):
 #     calculate the gradient (loss.backward())
 #     print i and the loss
 #     perform an optimizer step
+
 def train_classifier(opt, model, x, y):
-    pass
-    
+    for i in range(n0):
+        opt.zero_grad()
+        y_pred = model(x)
+        loss = loss_fn(y_pred, y)
+        print(i, loss.item())
+        loss.backward()
+        opt.step()
+
+    print("Finished Training!")
+
 # TODO 5
 # Instantiate the network and the optimizer
 # call train_classifier with the training set
@@ -84,8 +110,11 @@ def train_classifier(opt, model, x, y):
 #     Precision (which percentage of images identified as your chosen digit was actually that digit: TP/(TP+FP))
 #     Recall (which percentage of your chosen digit was identified as such: TP/(TP+FN))
 def classify(x_train, y_train, x_validation, labels_validation):
+    # discriminator = Discriminator()
+    # opt = torch.optim.Adam(Discriminator.parameters(), lr=0.01)
+    # train_classifier()
     pass
-    
+
 # Task 2 (GAN) starts here
 
 # TODO 6: Change number of total training iterations for GAN, for the discriminator and for the generator
@@ -117,7 +146,7 @@ class Generator(nn.Module):
 def train_discriminator(opt, discriminator, x_true, x_false):
     print("Training discriminator")
 
-# TODO 9 
+# TODO 9
 # Implement training loop for the generator:
 # for i in range(n2):
 #     zero gradients 
@@ -130,7 +159,7 @@ def train_discriminator(opt, discriminator, x_true, x_false):
 #     perform an optimization step
 def train_generator(opt, generator, discriminator):
     print("Training generator")
-        
+
 
 # TODO 10
 # Implement GAN training loop:
@@ -146,7 +175,7 @@ def train_generator(opt, generator, discriminator):
 # The images should start to look like numbers after just a few (could be after 1 or 2 already, or 3-10) iterations of *this* loop
 def gan(x_real):
     show_image(x_real[0], "train_0.png", scale=SCALE_01)
-    
+
 
 
 def main(rungan):
@@ -164,18 +193,18 @@ def main(rungan):
     x_train = train.data.float().view(-1,28*28)/255.0
     labels_train = train.targets
     y_train = (labels_train == digit).float().view(-1,1)
-    
+
     validation = torchvision.datasets.MNIST(".", train=False)
     x_validation = validation.data.float().view(-1,28*28)/255.0
     labels_validation = validation.targets
-    
+
     if rungan:
         gan(x_train[labels_train == digit])
     else:
         classify(x_train, y_train, x_validation, labels_validation)
-    
-    
-        
+
+
+
 """
 You can pass -g or --gan to the script to run the GAN part, otherwise it will run the classification part.
 """
