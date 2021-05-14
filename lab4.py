@@ -6,7 +6,7 @@ import PIL
 import random
 
 # TODO 1: Choose a digit
-digit = 2
+digit = 7
 
 # TODO 2: Change number of training iterations for classifier
 n0 = 5
@@ -53,24 +53,15 @@ class Discriminator(nn.Module):
     def __init__(self):
         super().__init__()
 
-        #Start with LeakyReLU for hidden layers
-        model = nn.Sequential(nn.Linear(784, 256),
-                              nn.LeakyReLU(),
-                              nn.Linear(256, 1))
-        print(self.model)
-        #self.linear1 = nn.Linear(784,1)
-
-        #Sigmoid for output layer
-        self.sigmoid = nn.Sigmoid()
-        self.softmax = nn.Softmax(dim=1)
-
-        opt = torch.optim.Adam(model.parameters(), lr=0.01)
+        # Start with LeakyReLU for hidden layers
+        self.model = nn.Sequential(nn.Linear(784, 256),
+                                    nn.LeakyReLU(),
+                                    nn.Linear(256, 1),
+                                    nn.Sigmoid(),
+                                    nn.Softmax(dim=1),)
 
     def forward(self, x):
         x = self.model(x)
-        x = self.sigmoid(x)
-        x = self.softmax(x)
-
         return x
 
 # TODO 4
@@ -92,7 +83,7 @@ def train_classifier(opt, model, x, y):
         loss.backward()
         opt.step()
 
-    print("Finished Training!")
+    print("Finished Classifier Training!")
 
 # TODO 5
 # Instantiate the network and the optimizer
@@ -110,9 +101,9 @@ def train_classifier(opt, model, x, y):
 #     Precision (which percentage of images identified as your chosen digit was actually that digit: TP/(TP+FP))
 #     Recall (which percentage of your chosen digit was identified as such: TP/(TP+FN))
 def classify(x_train, y_train, x_validation, labels_validation):
-    # discriminator = Discriminator()
-    # opt = torch.optim.Adam(Discriminator.parameters(), lr=0.01)
-    # train_classifier()
+    discriminator = Discriminator()
+    opt = torch.optim.Adam(discriminator.parameters(), lr=0.001)
+    train_classifier(opt, discriminator, x_train, y_train)
     pass
 
 # Task 2 (GAN) starts here
@@ -127,9 +118,20 @@ n2 = 5
 class Generator(nn.Module):
     def __init__(self):
         super().__init__()
-        self.linear1 = nn.Linear(100, 784)
+       #self.linear1 = nn.Linear(100, 784)
+
+        self.model = nn.Sequential(nn.Linear(100, 128),
+                                   nn.LeakyReLU(),
+                                   nn.Linear(128, 256),
+                                   nn.LeakyReLU(),
+                                   nn.Linear(256, 512),
+                                   nn.LeakyReLU(),
+                                   nn.Linear(512, 784),)
+
     def forward(self, x):
-        return self.linear1(x)
+        x = self.model(x)
+        return x
+        #return self.linear1(x)
 
 # TODO 8
 # Implement training loop for the discriminator, given real and fake data:
@@ -144,6 +146,19 @@ class Generator(nn.Module):
 #     print i and both of the loss values
 #     perform an optimizer step
 def train_discriminator(opt, discriminator, x_true, x_false):
+    discriminator = Discriminator()
+    opt_discrim = torch.optim.Adam(discriminator.parameters(), lr=0.001)
+    for i in range (n1):
+        discriminator.zero_grad()
+        true_discrim = discriminator(x_true)
+        loss_true = loss_fn(true_discrim, x_true)
+        loss_true.backward()
+        false_discrim = discriminator(x_false)
+        loss_false = loss_fn(false_discrim, x_false)
+        loss_false.backward()
+        print(i, loss_true, loss_false)
+        opt_discrim.step()
+
     print("Training discriminator")
 
 # TODO 9
@@ -158,6 +173,16 @@ def train_discriminator(opt, discriminator, x_true, x_false):
 #     print i and the loss
 #     perform an optimization step
 def train_generator(opt, generator, discriminator):
+    generator = Generator()
+    opt_generator = torch.optim.Adam(generator.parameters(), lr=0.001)
+    for i in range (n2):
+        generator.zero_grad()
+        generate_sample = generator((torch.randn(2)))
+        output_discrim_generate = discriminator(generate_sample)
+        loss_generator = loss_fn(output_discrim_generate, )
+        loss_generator.backward()
+        opt_generator.step()
+
     print("Training generator")
 
 
@@ -175,6 +200,16 @@ def train_generator(opt, generator, discriminator):
 # The images should start to look like numbers after just a few (could be after 1 or 2 already, or 3-10) iterations of *this* loop
 def gan(x_real):
     show_image(x_real[0], "train_0.png", scale=SCALE_01)
+    discriminator = Discriminator()
+    generator = Generator()
+    opt_discrim = torch.optim.Adam(discriminator.parameters(), lr=0.001)
+    opt_generator = torch.optim.Adam(generator.parameters(), lr=0.001)
+
+    x_false = torch.rand((100, 784))
+    for i in range (n):
+        train_discriminator(opt_discrim, discriminator, x_real, x_false)
+        train_generator(opt_generator, generator, discriminator)
+        x_false = input(100)
 
 
 
