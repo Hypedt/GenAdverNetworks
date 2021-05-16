@@ -6,7 +6,7 @@ import PIL
 import random
 
 # TODO 1: Choose a digit
-digit = 7
+digit = 8
 
 # TODO 2: Change number of training iterations for classifier
 n0 = 5
@@ -51,14 +51,15 @@ loss_fn = torch.nn.BCELoss()
 # Change Network architecture of the discriminator/classifier network. It should have 784 inputs and 1 output (0 = fake, 1 = real)
 class Discriminator(nn.Module):
     def __init__(self):
-        super().__init__()
+        super(Discriminator, self).__init__()
 
         # Start with LeakyReLU for hidden layers
         self.model = nn.Sequential(nn.Linear(784, 256),
                                     nn.LeakyReLU(),
                                     nn.Linear(256, 1),
                                     nn.Sigmoid(),
-                                    nn.Softmax(dim=1),)
+                                    nn.Softmax(dim=1))
+
 
     def forward(self, x):
         x = self.model(x)
@@ -117,7 +118,7 @@ n2 = 5
 # Change Network architecture of the generator network. It should have 100 inputs (will be random numbers) and 784 outputs (one for each pixel, each between 0 and 1)
 class Generator(nn.Module):
     def __init__(self):
-        super().__init__()
+        super(Generator,self).__init__()
        #self.linear1 = nn.Linear(100, 784)
 
         self.model = nn.Sequential(nn.Linear(100, 128),
@@ -195,23 +196,43 @@ def train_generator(opt, generator, discriminator):
 #    call train_generator 
 #    generate some images with the current generator, and add a random selection of old fake images (e.g. 100 random old ones, and 100new ones = 200 in total)
 #    this will be your new collection of fake images
-#    save some of the current fake images to files (use a filename like "sample_%d_%d.png"%(i,j) so you have some samples from each iteration so you can see if the network improves)
-# If you read the todos above, your training code will print the loss in each iteration. The loss for the discriminator and the generator should decrease each time their respective training functions are called 
+#    save some of the current fake images to a file (use a filename like "sample_%d_%d.png"%(i,j) so you have some samples from each iteration so you can see if the network improves)
+# If you read the todos above, your training code will print the loss in each iteration. The loss for the discriminator and the generator should decrease each time their respective training functions are called
 # The images should start to look like numbers after just a few (could be after 1 or 2 already, or 3-10) iterations of *this* loop
 def gan(x_real):
     show_image(x_real[0], "train_0.png", scale=SCALE_01)
     discriminator = Discriminator()
     generator = Generator()
-    opt_discrim = torch.optim.Adam(discriminator.parameters(), lr=0.001)
-    opt_generator = torch.optim.Adam(generator.parameters(), lr=0.001)
+    opt_discrim = torch.optim.Adam(discriminator.parameters(), lr=0.00001)
+    opt_generator = torch.optim.Adam(generator.parameters(), lr=0.00001)
 
     x_false = torch.rand((100, 784))
-    for i in range (n):
+    for i in range(n):
         train_discriminator(opt_discrim, discriminator, x_real, x_false)
         train_generator(opt_generator, generator, discriminator)
-        x_false = input(100)
 
+        # Generate some images, 100 old [randomly!](x_false?) and 100 new (new_false?)
+        # Picking 100 old images
+        current_x_false_size = len(x_false)
+        current_counter = 0
+        current_false.append(x_false[0])
+        while (current_counter < 100):
+            current_false[current_counter] = x_false[random.randrange(0, current_x_false_size - 1)]
+            current_counter += 1
 
+        # Generate 100 new images (With generator?)
+        x_false = x_false.append(torch.rand((100, 784)))
+
+        # Image Size 28x28
+        # Save some of the current fake images ("sample_%d_%d.png"%(i,j))
+        current_counter = 0
+        while (current_counter < 20):
+            img = x_false[random.randrange(0, current_x_false_size - 1)]
+
+            j = current_counter
+            img.save("sample_%d_%d.png" % (i, j))
+
+            current_counter += 1
 
 def main(rungan):
     """
